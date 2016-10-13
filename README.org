@@ -1,0 +1,20 @@
+* What is this?
+  reuse_tracker is a tool to collect reuse log using fuse
+* Setup
+  1) Install submodule
+     #+BEGIN_SRC sh
+     $ git submodule init
+     $ git submodule update
+     #+END_SRC
+
+  2) Create mount point
+     #+BEGIN_SRC sh
+     # exapmle
+     $ mkdir /mnt/home
+     #+END_SRC
+
+* Usage
+  #+BEGIN_SRC sh
+  # mount your directory to mount point
+  $ python main.py /your/directory /mnt/home
+  #+END_SRC
