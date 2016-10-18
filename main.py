@@ -7,6 +7,7 @@ from errno import EACCES
 from os.path import realpath
 from sys import argv, exit
 from threading import Lock
+from datetime import datetime
 
 import os
 import sys
@@ -16,36 +17,34 @@ sys.path.append(path)
 
 from fuse import FUSE, FuseOSError, Operations, LoggingMixIn
 
-class Loopback(LoggingMixIn, Operations):
+class ReuseTrackFS(LoggingMixIn, Operations):
     def __init__(self, root):
         self.root = realpath(root)
         self.rwlock = Lock()
 
     def __call__(self, op, path, *args):
-        return super(Loopback, self).__call__(op, self.root + path, *args)
+        return super(ReuseTrackFS, self).__call__(op, self.root + path, *args)
 
     def access(self, path, mode):
-        # print("Access %(path)s" % locals())
         if not os.access(path, mode):
             raise FuseOSError(EACCES)
 
-    # chmod = os.chmod
     def chmod(self, path, mode):
         return os.chmod(path, mode)
 
-    # chown = os.chown
     def chown(self, path, uid, gid):
         return os.chown(path, uid, gid)
 
     def create(self, path, mode):
-        print("Create %(path)s" % locals())
-        return os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
+        print_with_time("Create %s(%d)" % (path, inode(path)))
+        return fd
 
     def flush(self, path, fh):
         return os.fsync(fh)
 
     def fsync(self, path, datasync, fh):
-        print("Fsync %(path)s" % locals())
+        print_with_time("Fsync %s(%d)" % (path, inode(path)))
         return os.fsync(fh)
         ### os.fdatasync is not available on MacOS
         # if datasync != 0:
@@ -64,22 +63,18 @@ class Loopback(LoggingMixIn, Operations):
     def link(self, target, source):
         return os.link(source, target)
 
-    # mkdir = os.mkdir
     def mkdir(self, path, mode):
-        print("mkdir %(path)s" % locals())
+        print_with_time("Mkdir %s(%d)" % (path, inode(path)))
         return os.mkdir(path, mode)
 
-    # mknod = os.mknod
     def mknod(self, path, mode, dev):
         return os.mknod(path, mode, dev)
 
-    # open = os.open
     def open(self, path, fip):
-        # print("Open %(path)s" % locals())
         return os.open(path, fip)
 
     def read(self, path, size, offset, fh):
-        print("Read %(path)s" % locals())
+        print_with_time("Read %s(%d)" % (path, inode(path)))
         with self.rwlock:
             os.lseek(fh, offset, 0)
             return os.read(fh, size)
@@ -87,9 +82,7 @@ class Loopback(LoggingMixIn, Operations):
     def readdir(self, path, fh):
         return ['.', '..'] + os.listdir(path)
 
-    # readlink = os.readlink
     def readlink(self, path):
-        # print("ReadLink %(path)s" % locals())
         return os.readlink(path)
 
     def release(self, path, fh):
@@ -97,12 +90,11 @@ class Loopback(LoggingMixIn, Operations):
 
     def rename(self, old, new):
         newpath = self.root + new
-        print("Rename %(old)s to %(newpath)s" % locals())
+        print_with_time("Rename %s to %s(%d)" % (old, newpath, inode(old)))
         return os.rename(old, newpath)
 
-    # rmdir = os.rmdir
     def rmdir(self, path):
-        print("Rmdir %(path)s" % locals())
+        print_with_time("Rmdir %s(%d)" % (path, inode(path)))
         return os.rmdir(path)
 
     def statfs(self, path):
@@ -118,21 +110,26 @@ class Loopback(LoggingMixIn, Operations):
         with open(path, 'r+') as f:
             f.truncate(length)
 
-    # unlink = os.unlink
     def unlink(self, path):
-        print("Delete %(path)s" % locals())
+        print_with_time("Delete %s(%d)" % (path, inode(path)))
         return os.unlink(path)
 
-    # utimens = os.utime
     def utimens(self, path, buf):
         return os.utime(path, buf)
 
     def write(self, path, data, offset, fh):
-        print("Write %(path)s" % locals())
+        print_with_time("Write %s(%d)" % (path, inode(path)))
         with self.rwlock:
             os.lseek(fh, offset, 0)
             return os.write(fh, data)
 
+def print_with_time(str):
+    time = datetime.now()
+    msec = "%04d" % (time.microsecond // 1000)
+    print(time.strftime("%Y/%m/%d %H:%M:%S.") + msec + ' ' + str)
+
+def inode(path):
+    return os.stat(path).st_ino
 
 if __name__ == '__main__':
     if len(argv) != 3:
@@ -141,4 +138,4 @@ if __name__ == '__main__':
 
     # logging.basicConfig(level=logging.DEBUG)
 
-    fuse = FUSE(Loopback(argv[1]), argv[2], foreground=True)
+    fuse = FUSE(ReuseTrackFS(argv[1]), argv[2], foreground=True)
