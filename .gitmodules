@@ -1,3 +1,6 @@
 [submodule "fusepy"]
 	path = fusepy
 	url = git@github.com:terencehonles/fusepy.git
+[submodule "sqlalchemy"]
+	path = sqlalchemy
+	url = git@github.com:zzzeek/sqlalchemy.git
