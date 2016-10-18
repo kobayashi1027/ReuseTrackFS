@@ -47,10 +47,10 @@ class ReuseTrackFS(LoggingMixIn, Operations):
         print_with_time("Fsync %s(%d)" % (path, inode(path)))
         return os.fsync(fh)
         ### os.fdatasync is not available on MacOS
-        # if datasync != 0:
-        #   return os.fdatasync(fh)
-        # else:
-        #   return os.fsync(fh)
+        if datasync != 0 and _system != "Darwin":
+          return os.fdatasync(fh)
+        else:
+          return os.fsync(fh)
 
     def getattr(self, path, fh=None):
         st = os.lstat(path)
