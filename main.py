@@ -125,8 +125,8 @@ class ReuseTrackFS(LoggingMixIn, Operations):
 
 def print_with_time(str):
     time = datetime.now()
-    msec = "%04d" % (time.microsecond // 1000)
-    print(time.strftime("%Y/%m/%d %H:%M:%S.") + msec + ' ' + str)
+    msec = "%03d" % (time.microsecond // 1000)
+    print(time.strftime("%Y/%m/%d %H:%M:%S,") + msec + ' ' + str)
 
 def inode(path):
     return os.stat(path).st_ino
