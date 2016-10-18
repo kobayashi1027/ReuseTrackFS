@@ -64,8 +64,8 @@ class ReuseTrackFS(LoggingMixIn, Operations):
         return os.link(source, target)
 
     def mkdir(self, path, mode):
+        os.mkdir(path, mode)
         print_with_time("Mkdir %s(%d)" % (path, inode(path)))
-        return os.mkdir(path, mode)
 
     def mknod(self, path, mode, dev):
         return os.mknod(path, mode, dev)
@@ -90,8 +90,8 @@ class ReuseTrackFS(LoggingMixIn, Operations):
 
     def rename(self, old, new):
         newpath = self.root + new
-        print_with_time("Rename %s to %s(%d)" % (old, newpath, inode(old)))
-        return os.rename(old, newpath)
+        os.rename(old, newpath)
+        print_with_time("Rename %s to %s(%d)" % (old, newpath, inode(newpath)))
 
     def rmdir(self, path):
         print_with_time("Rmdir %s(%d)" % (path, inode(path)))
