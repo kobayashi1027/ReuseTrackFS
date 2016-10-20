@@ -1,13 +1,15 @@
+# coding: utf-8
 #!/usr/bin/env python
 from __future__ import print_function, absolute_import, division
 
 import logging
 
 from errno import EACCES
-from os.path import realpath
+from os.path import realpath, basename
 from sys import argv, exit
 from threading import Lock
 from datetime import datetime
+import hashlib
 
 import os
 import sys
@@ -16,6 +18,9 @@ path = os.path.join(os.path.dirname(__file__), './fusepy')
 sys.path.append(path)
 
 from fuse import FUSE, FuseOSError, Operations, LoggingMixIn
+
+import db
+from db import File
 
 class ReuseTrackFS(LoggingMixIn, Operations):
     def __init__(self, root):
@@ -74,7 +79,12 @@ class ReuseTrackFS(LoggingMixIn, Operations):
         return os.open(path, fip)
 
     def read(self, path, size, offset, fh):
-        print_with_time("Read %s(%d)" % (path, inode(path)))
+        print_with_time("Read %s(%d) size=%d offset=%d" % (path, inode(path), size, offset))
+
+        # if read is last round, save fileinfo
+        if os.lstat(path).st_size == (size + offset):
+            save_filelog(path)
+
         with self.rwlock:
             os.lseek(fh, offset, 0)
             return os.read(fh, size)
@@ -130,6 +140,43 @@ def print_with_time(str):
 
 def inode(path):
     return os.stat(path).st_ino
+
+def save_filelog(path):
+    f = os.lstat(path)
+    fd = os.open(path, os.O_RDONLY)
+    content = os.read(fd, f.st_size)
+
+    session = db.session()
+    detected_file = session.query(File).filter(File.inode == f.st_ino).first()
+
+    if detected_file:
+        # Update file info
+        detected_file.name = basename(path)
+        detected_file.path = path
+        detected_file.uid = f.st_uid
+        detected_file.gid = f.st_gid
+        detected_file.atime = datetime.fromtimestamp(f.st_atime)
+        detected_file.mtime = datetime.fromtimestamp(f.st_mtime)
+        detected_file.size = f.st_size
+        detected_file.hash_value = hashlib.sha1(content).hexdigest()
+        session.add(detected_file)
+    else:
+        # Create new file info
+        new_data = File(
+            inode = f.st_ino,
+            name = basename(path),
+            path = path,
+            uid = f.st_uid,
+            gid = f.st_gid,
+            atime = datetime.fromtimestamp(f.st_atime),
+            mtime = datetime.fromtimestamp(f.st_mtime),
+            ctime = datetime.fromtimestamp(f.st_ctime),
+            size = f.st_size,
+            hash_value = hashlib.sha1(content).hexdigest()
+        )
+        session.add(new_data)
+
+    session.commit()
 
 if __name__ == '__main__':
     if len(argv) != 3:
