@@ -3,7 +3,9 @@ import sys
 
 path = os.path.join(os.path.dirname(__file__), './sqlalchemy/lib')
 sys.path.append(path)
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, DateTime
+from sqlalchemy.engine import create_engine
+from sqlalchemy.types import Integer, String, DateTime
+from sqlalchemy.schema import Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -22,6 +24,12 @@ class File(Base):
     ctime = Column(DateTime)
     size = Column(Integer)
     hash_value = Column(String)
+
+class CopyLog(Base):
+    __tablename__ = 'copy_logs'
+    id = Column(Integer, primary_key=True)
+    source = Column(Integer)
+    destination = Column(Integer)
 
 engine = create_engine('sqlite:///filelog.sqlite3', echo=True)
 Base.metadata.create_all(engine)
