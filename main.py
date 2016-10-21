@@ -81,13 +81,15 @@ class ReuseTrackFS(LoggingMixIn, Operations):
     def read(self, path, size, offset, fh):
         print_with_time("Read %s(%d) size=%d offset=%d" % (path, inode(path), size, offset))
 
+        with self.rwlock:
+            os.lseek(fh, offset, 0)
+            data = os.read(fh, size)
+
         # if read is last round, save fileinfo
         if os.lstat(path).st_size == (size + offset):
             save_filelog(path)
 
-        with self.rwlock:
-            os.lseek(fh, offset, 0)
-            return os.read(fh, size)
+        return data
 
     def readdir(self, path, fh):
         return ['.', '..'] + os.listdir(path)
@@ -128,10 +130,17 @@ class ReuseTrackFS(LoggingMixIn, Operations):
         return os.utime(path, buf)
 
     def write(self, path, data, offset, fh):
-        print_with_time("Write %s(%d)" % (path, inode(path)))
+        print_with_time("Write %s(%d) datasize=%d offset=%d" % (path, inode(path), len(data), offset))
+
         with self.rwlock:
             os.lseek(fh, offset, 0)
-            return os.write(fh, data)
+            size = os.write(fh, data)
+
+        # if write is last round, save fileinfo
+        if os.lstat(path).st_size == (size + offset):
+            save_filelog(path)
+
+        return size
 
 def print_with_time(str):
     time = datetime.now()
