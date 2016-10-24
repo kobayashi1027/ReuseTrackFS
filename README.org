@@ -1,5 +1,5 @@
 * What is this?
-  reuse_tracker is a tool to collect reuse log using fuse
+  reuse_tracker is a tool to collect reuse log using FUSE
 * Setup
   1) Install submodule
      #+BEGIN_SRC sh
@@ -9,7 +9,7 @@
 
   2) Create mount point
      #+BEGIN_SRC sh
-     # exapmle
+     # example
      $ mkdir /mnt/home
      #+END_SRC
 
