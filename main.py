@@ -20,7 +20,7 @@ sys.path.append(path)
 from fuse import FUSE, FuseOSError, Operations, LoggingMixIn
 
 import db
-from db import File
+from db import File, Source, Destination, CopyLog
 
 class ReuseTrackFS(LoggingMixIn, Operations):
     def __init__(self, root):
@@ -139,6 +139,7 @@ class ReuseTrackFS(LoggingMixIn, Operations):
         # if write is last round, save fileinfo
         if os.lstat(path).st_size == (size + offset):
             save_filelog(path)
+            save_copylog(path)
 
         return size
 
@@ -186,6 +187,20 @@ def save_filelog(path):
         session.add(new_data)
 
     session.commit()
+
+def save_copylog(path):
+    session = db.session()
+    dest = session.query(File).filter(File.inode == os.lstat(path).st_ino).first()
+    src = session.query(File).filter(File.hash_value == dest.hash_value, File.id != dest.id).first()
+    if src:
+        # Create new copy log
+        new_copy_log = CopyLog(
+            source = src,
+            destination = dest,
+            created_at = datetime.now()
+        )
+        session.add(new_copy_log)
+        session.commit()
 
 if __name__ == '__main__':
     if len(argv) != 3:
