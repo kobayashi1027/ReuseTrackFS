@@ -1,13 +1,22 @@
 * What is this?
   reuse_tracker is a tool to collect reuse log using FUSE
+
 * Setup
-  1) Install submodule
+  1) Install [[https://osxfuse.github.io/][FUSE]]
+
+  2) Install reuse_tracker
      #+BEGIN_SRC sh
+     $ git clone git@github.com:kobayashi1027/reuse_tracker.git ~/reuse_tracker
+     #+END_SRC
+
+  3) Install submodule
+     #+BEGIN_SRC sh
+     $ cd ~/reuse_tracker
      $ git submodule init
      $ git submodule update
      #+END_SRC
 
-  2) Create mount point
+  4) Create mount point
      #+BEGIN_SRC sh
      # example
      $ mkdir /mnt/home
