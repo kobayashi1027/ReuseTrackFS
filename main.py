@@ -138,8 +138,11 @@ class ReuseTrackFS(LoggingMixIn, Operations):
 
         # if write is last round, save fileinfo
         if os.lstat(path).st_size == (size + offset):
-            save_filelog(path)
-            save_copylog(path)
+            dest = save_filelog(path)
+            src = search_source_file(dest)
+            # if source fileinfo is exist, save copy_log
+            if src:
+                save_copylog(src, dest)
 
         return size
 
@@ -172,7 +175,7 @@ def save_filelog(path):
         session.add(detected_file)
     else:
         # Create new file info
-        new_data = File(
+        new_file = File(
             inode = f.st_ino,
             name = basename(path),
             path = path,
@@ -184,23 +187,42 @@ def save_filelog(path):
             size = f.st_size,
             hash_value = hashlib.sha1(content).hexdigest()
         )
-        session.add(new_data)
+        session.add(new_file)
+
+    # Get Create/Update file object
+    data = File()
+    for x in (session.dirty | session.new):
+        data = x
 
     session.commit()
 
-def save_copylog(path):
+    saved_file = session.query(File).filter(File.inode == data.inode).first()
+    return saved_file
+
+def save_copylog(src, dest):
     session = db.session()
-    dest = session.query(File).filter(File.inode == os.lstat(path).st_ino).first()
-    src = session.query(File).filter(File.hash_value == dest.hash_value, File.id != dest.id).first()
-    if src:
-        # Create new copy log
-        new_copy_log = CopyLog(
-            source = src,
-            destination = dest,
-            created_at = datetime.now()
-        )
-        session.add(new_copy_log)
-        session.commit()
+    new_copy_log = CopyLog(
+        source = src,
+        destination = dest,
+        created_at = datetime.now()
+    )
+    session.add(new_copy_log)
+    session.commit()
+
+def search_source_file(file):
+    session = db.session()
+    source_file = session.query(File).filter(
+        File.hash_value == file.hash_value,
+        File.id != file.id,
+        File.mtime < file.mtime
+    ).order_by(File.atime.desc()).first()
+    session.close()
+
+    if source_file:
+        return source_file
+    else:
+        return None
+
 
 if __name__ == '__main__':
     if len(argv) != 3:
