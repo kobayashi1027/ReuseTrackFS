@@ -1,7 +1,7 @@
 import os
 import sys
 
-path = os.path.join(os.path.dirname(__file__), './lib/sqlalchemy/lib')
+path = os.path.join(os.path.dirname(__file__), './sqlalchemy/lib')
 sys.path.append(path)
 from sqlalchemy.engine import create_engine
 from sqlalchemy.types import Integer, String, DateTime

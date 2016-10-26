@@ -14,8 +14,9 @@ import hashlib
 import os
 import sys
 
-path = os.path.join(os.path.dirname(__file__), './lib/fusepy')
+path = os.path.join(os.path.dirname(__file__), './lib')
 sys.path.append(path)
+sys.path.append(path + "/fusepy")
 
 from fuse import FUSE, FuseOSError, Operations, LoggingMixIn
 
@@ -197,6 +198,8 @@ def save_filelog(path):
     session.commit()
 
     saved_file = session.query(File).filter(File.inode == data.inode).first()
+    session.close()
+
     return saved_file
 
 def save_copylog(src, dest):
