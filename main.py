@@ -190,14 +190,10 @@ def save_filelog(path):
         )
         session.add(new_file)
 
-    # Get Create/Update file object
-    data = File()
-    for x in (session.dirty | session.new):
-        data = x
-
     session.commit()
 
-    saved_file = session.query(File).filter(File.inode == data.inode).first()
+    # Get Create/Update file object
+    saved_file = session.query(File).filter(File.inode == f.st_ino).first()
     session.close()
 
     return saved_file
