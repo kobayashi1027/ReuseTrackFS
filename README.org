@@ -1,17 +1,17 @@
 * What is this?
-  reuse_tracker is a tool to collect reuse log using FUSE
+  ReuseTrackFS is a filesystem to collect reuse log using FUSE
 
 * Setup
   1) Install [[https://osxfuse.github.io/][FUSE]]
 
-  2) Install reuse_tracker
+  2) Install ReuseTrackFS
      #+BEGIN_SRC sh
-     $ git clone git@github.com:kobayashi1027/reuse_tracker.git ~/reuse_tracker
+     $ git clone git@github.com:kobayashi1027/ReuseTrackFS.git ~/ReuseTrackFS
      #+END_SRC
 
   3) Install submodule
      #+BEGIN_SRC sh
-     $ cd ~/reuse_tracker
+     $ cd ~/ReuseTrackFS
      $ git submodule init
      $ git submodule update
      #+END_SRC
